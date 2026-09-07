@@ -7,10 +7,8 @@
 #include "hardware_manager.h"
 #include "performance_tracker.h"
 
-// Color Palette
-#define COLOR_BG          0x0842   // Very dark navy / carbon black
-#define COLOR_CARD_BG     0x18E3   // Dark slate card
-#define COLOR_CARD_BORDER 0x31A6   // Subtle card border
+// Base Color Constants
+#define COLOR_BG_DEFAULT  0x0842   // Very dark navy / carbon black
 #define COLOR_ACCENT_CYAN 0x07FF   // Cyan
 #define COLOR_ACCENT_BLUE 0x04FF   // Bright Blue
 #define COLOR_ACCENT_RED  0xF800   // Red
@@ -18,6 +16,16 @@
 #define COLOR_ACCENT_GRN  0x07E0   // Green
 #define COLOR_TEXT_DIM    0x8410   // Dim gray text
 #define COLOR_TEXT_BRIGHT 0xFFFF   // Bright white text
+
+// Theme Definition
+struct ThemePalette {
+    const char* name;
+    uint16_t bg;
+    uint16_t cardBg;
+    uint16_t cardBorder;
+    uint16_t accent;
+    uint16_t secondary;
+};
 
 class DisplayManager {
 public:
@@ -29,6 +37,8 @@ public:
     DashboardPage getPage() const { return m_currentPage; }
     void nextPage();
     void prevPage();
+
+    const ThemePalette& getTheme() const;
 
 private:
     TFT_eSPI m_tft;

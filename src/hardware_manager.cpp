@@ -25,6 +25,7 @@ void HardwareManager::begin() {
         m_settings.manualBrightness = m_prefs.getUChar("man_br", 85);
         m_settings.shiftRpm = m_prefs.getUShort("shift_rpm", DEFAULT_SHIFT_RPM);
         m_settings.redlineRpm = m_prefs.getUShort("redline_rpm", DEFAULT_REDLINE_RPM);
+        m_settings.colorTheme = m_prefs.getUChar("theme", THEME_CYBER_CYAN);
         m_settings.autoCyclePages = m_prefs.getBool("cycle", false);
         m_settings.cycleSeconds = m_prefs.getUChar("cycle_sec", 5);
         m_settings.touchMinX = m_prefs.getUShort("t_min_x", TOUCH_MIN_X);
@@ -87,6 +88,7 @@ void HardwareManager::saveSettings() {
     m_prefs.putUChar("man_br", m_settings.manualBrightness);
     m_prefs.putUShort("shift_rpm", m_settings.shiftRpm);
     m_prefs.putUShort("redline_rpm", m_settings.redlineRpm);
+    m_prefs.putUChar("theme", m_settings.colorTheme);
     m_prefs.putBool("cycle", m_settings.autoCyclePages);
     m_prefs.putUChar("cycle_sec", m_settings.cycleSeconds);
     m_prefs.putUShort("t_min_x", m_settings.touchMinX);

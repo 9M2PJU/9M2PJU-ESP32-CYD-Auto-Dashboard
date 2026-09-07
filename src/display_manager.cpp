@@ -2,15 +2,34 @@
 #include "obd_engine.h"
 #include <math.h>
 
+static const ThemePalette PALETTES[THEME_COUNT] = {
+    // 0: Cyber Cyan (Modern High-Tech Electric Blue / Cyan)
+    { "CYBER CYAN",    0x0842, 0x10A2, 0x2165, 0x07FF, 0x04FF },
+    // 1: Racing Red (Type-R / Sport Track Carbon Red)
+    { "RACING RED",    0x0800, 0x1800, 0x4000, 0xF800, 0xFDA0 },
+    // 2: Nismo Amber (Classic JDM / BMW Warm Amber)
+    { "NISMO AMBER",   0x0820, 0x1880, 0x3960, 0xFDA0, 0xFFE0 },
+    // 3: Neon Green (RS / Acid Lime Toxic Green)
+    { "NEON GREEN",    0x0040, 0x08A1, 0x11E3, 0x07E0, 0x07FF },
+    // 4: Electric Blue (GT / Cobalt Electric Blue)
+    { "ELECTRIC BLUE", 0x0022, 0x08A5, 0x116A, 0x04FF, 0xFFFF }
+};
+
 DisplayManager Display;
 
 DisplayManager::DisplayManager() : m_tft(TFT_eSPI()) {
 }
 
+const ThemePalette& DisplayManager::getTheme() const {
+    uint8_t idx = Hardware.getSettings().colorTheme;
+    if (idx >= THEME_COUNT) idx = 0;
+    return PALETTES[idx];
+}
+
 void DisplayManager::begin() {
     m_tft.init();
     m_tft.setRotation(1); // Landscape 320x240
-    m_tft.fillScreen(COLOR_BG);
+    m_tft.fillScreen(getTheme().bg);
     m_pageNeedsFullRedraw = true;
 }
 
@@ -46,8 +65,9 @@ void DisplayManager::update(const OBDMetrics& metrics, const PerformanceTracker&
     }
 
     // 3. Page redrawing logic
+    const ThemePalette& theme = getTheme();
     if (m_currentPage != m_lastRenderedPage || m_pageNeedsFullRedraw) {
-        m_tft.fillScreen(COLOR_BG);
+        m_tft.fillScreen(theme.bg);
         renderTopBar(metrics);
         renderNavBar();
         m_lastRenderedPage = m_currentPage;
@@ -88,9 +108,11 @@ void DisplayManager::update(const OBDMetrics& metrics, const PerformanceTracker&
 // ============================================================================
 
 void DisplayManager::renderTopBar(const OBDMetrics& metrics) {
+    const ThemePalette& theme = getTheme();
+
     // Background bar
-    m_tft.fillRect(0, 0, SCREEN_WIDTH, 22, 0x10A2);
-    m_tft.drawFastHLine(0, 22, SCREEN_WIDTH, COLOR_CARD_BORDER);
+    m_tft.fillRect(0, 0, SCREEN_WIDTH, 22, theme.cardBg);
+    m_tft.drawFastHLine(0, 22, SCREEN_WIDTH, theme.cardBorder);
 
     // Left: Connection Status Dot & Label
     uint16_t stateColor = COLOR_ACCENT_RED;
@@ -122,17 +144,17 @@ void DisplayManager::renderTopBar(const OBDMetrics& metrics) {
 
     // Draw status dot
     m_tft.fillCircle(8, 11, 4, stateColor);
-    m_tft.setTextColor(COLOR_TEXT_BRIGHT, 0x10A2);
+    m_tft.setTextColor(COLOR_TEXT_BRIGHT, theme.cardBg);
     m_tft.drawString(stateText, 18, 5, 2);
 
     // Center: Shift RPM / Page Label
     char centerBuf[24];
     if (metrics.coolantTempC >= DEFAULT_COOLANT_WARN_C) {
-        m_tft.setTextColor(COLOR_ACCENT_RED, 0x10A2);
+        m_tft.setTextColor(COLOR_ACCENT_RED, theme.cardBg);
         snprintf(centerBuf, sizeof(centerBuf), "! HIGH TEMP !");
     } else {
-        m_tft.setTextColor(COLOR_TEXT_DIM, 0x10A2);
-        snprintf(centerBuf, sizeof(centerBuf), "9M2PJU CYD");
+        m_tft.setTextColor(theme.accent, theme.cardBg);
+        snprintf(centerBuf, sizeof(centerBuf), "9M2PJU Auto");
     }
     m_tft.drawCentreString(centerBuf, 160, 5, 2);
 
@@ -145,16 +167,17 @@ void DisplayManager::renderTopBar(const OBDMetrics& metrics) {
     } else if (metrics.batteryVoltage < 12.3f) {
         voltColor = COLOR_ACCENT_AMBER;
     }
-    m_tft.setTextColor(voltColor, 0x10A2);
+    m_tft.setTextColor(voltColor, theme.cardBg);
     m_tft.drawRightString(voltBuf, 314, 5, 2);
 }
 
 void DisplayManager::renderNavBar() {
+    const ThemePalette& theme = getTheme();
     int navY = 214;
     int tabW = 64; // 320 / 5 = 64px each
 
-    m_tft.fillRect(0, navY, SCREEN_WIDTH, 26, 0x10A2);
-    m_tft.drawFastHLine(0, navY, SCREEN_WIDTH, COLOR_CARD_BORDER);
+    m_tft.fillRect(0, navY, SCREEN_WIDTH, 26, theme.cardBg);
+    m_tft.drawFastHLine(0, navY, SCREEN_WIDTH, theme.cardBorder);
 
     const char* tabs[PAGE_COUNT] = {"SPORT", "GRID", "DRAG", "DIAG", "SETUP"};
 
@@ -163,11 +186,11 @@ void DisplayManager::renderNavBar() {
         bool isActive = (i == (int)m_currentPage);
 
         if (isActive) {
-            m_tft.fillRect(x + 2, navY + 2, tabW - 4, 22, 0x2124);
-            m_tft.drawFastHLine(x + 4, navY + 23, tabW - 8, COLOR_ACCENT_CYAN);
-            m_tft.setTextColor(COLOR_ACCENT_CYAN, 0x2124);
+            m_tft.fillRect(x + 2, navY + 2, tabW - 4, 22, theme.bg);
+            m_tft.drawFastHLine(x + 4, navY + 23, tabW - 8, theme.accent);
+            m_tft.setTextColor(theme.accent, theme.bg);
         } else {
-            m_tft.setTextColor(COLOR_TEXT_DIM, 0x10A2);
+            m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
         }
         m_tft.drawCentreString(tabs[i], x + (tabW / 2), navY + 6, 2);
     }
@@ -179,6 +202,7 @@ void DisplayManager::renderNavBar() {
 
 void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     AppSettings& cfg = Hardware.getSettings();
+    const ThemePalette& theme = getTheme();
 
     // 1. Center Sweeping Tachometer Arc (Center X: 160, Y: 110)
     int16_t cx = 160;
@@ -186,7 +210,7 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     int16_t r = 78;
 
     // Draw RPM Outer Track Background
-    drawArcBar(cx, cy, r, 10, 135, 405, 0x18E3);
+    drawArcBar(cx, cy, r, 10, 135, 405, theme.cardBg);
 
     // Calculate RPM progress angle
     float maxRpm = (float)DEFAULT_MAX_RPM;
@@ -194,7 +218,7 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     float rpmAngle = 135.0f + (rpmClamped / maxRpm) * 270.0f;
 
     // Color gradient based on RPM zones
-    uint16_t rpmColor = COLOR_ACCENT_CYAN;
+    uint16_t rpmColor = theme.accent;
     if (metrics.rpm >= cfg.redlineRpm) {
         rpmColor = COLOR_ACCENT_RED;
     } else if (metrics.rpm >= cfg.shiftRpm) {
@@ -210,17 +234,17 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     float dispSpeed = metrics.getSpeed(cfg.useImperial);
     snprintf(speedBuf, sizeof(speedBuf), "%d", (int)round(dispSpeed));
 
-    m_tft.setTextColor(COLOR_TEXT_BRIGHT, COLOR_BG);
+    m_tft.setTextColor(COLOR_TEXT_BRIGHT, theme.bg);
     m_tft.drawCentreString(speedBuf, cx, cy - 28, 7); // Large 7-segment / Big Font
 
     // Speed Unit Label
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_BG);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.bg);
     m_tft.drawCentreString(metrics.getSpeedUnit(cfg.useImperial), cx, cy + 22, 2);
 
     // 3. Digital RPM Readout
     char rpmBuf[24];
     snprintf(rpmBuf, sizeof(rpmBuf), "%4d RPM", (int)round(metrics.rpm));
-    m_tft.setTextColor(rpmColor, COLOR_BG);
+    m_tft.setTextColor(rpmColor, theme.bg);
     m_tft.drawCentreString(rpmBuf, cx, cy + 38, 4);
 
     // 4. Center Gear Badge
@@ -232,17 +256,17 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     int cardW = 68;
     int cardH = 168;
 
-    m_tft.fillRoundRect(leftX, leftY, cardW, cardH, 4, COLOR_CARD_BG);
-    m_tft.drawRoundRect(leftX, leftY, cardW, cardH, 4, COLOR_CARD_BORDER);
+    m_tft.fillRoundRect(leftX, leftY, cardW, cardH, 4, theme.cardBg);
+    m_tft.drawRoundRect(leftX, leftY, cardW, cardH, 4, theme.cardBorder);
 
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawCentreString("COOLANT", leftX + (cardW / 2), leftY + 6, 2);
 
     float dispCoolant = metrics.getCoolantTemp(cfg.useImperial);
     char coolBuf[16];
     snprintf(coolBuf, sizeof(coolBuf), "%d%s", (int)round(dispCoolant), metrics.getTempUnit(cfg.useImperial));
 
-    uint16_t coolColor = COLOR_ACCENT_CYAN;
+    uint16_t coolColor = theme.accent;
     if (metrics.coolantTempC >= DEFAULT_COOLANT_WARN_C) {
         coolColor = COLOR_ACCENT_RED;
     } else if (metrics.coolantTempC >= 95.0f) {
@@ -251,7 +275,7 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
         coolColor = COLOR_ACCENT_BLUE; // Cold engine
     }
 
-    m_tft.setTextColor(coolColor, COLOR_CARD_BG);
+    m_tft.setTextColor(coolColor, theme.cardBg);
     m_tft.drawCentreString(coolBuf, leftX + (cardW / 2), leftY + 24, 4);
 
     // Vertical Coolant Bar
@@ -261,12 +285,12 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     int barW = 12;
     int barH = 88;
 
-    m_tft.fillRect(barX, barY, barW, barH, 0x10A2);
+    m_tft.fillRect(barX, barY, barW, barH, theme.bg);
     int fillH = (int)(barH * coolPercent);
     m_tft.fillRect(barX, barY + (barH - fillH), barW, fillH, coolColor);
-    m_tft.drawRect(barX, barY, barW, barH, COLOR_CARD_BORDER);
+    m_tft.drawRect(barX, barY, barW, barH, theme.cardBorder);
 
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawString("H", barX + 16, barY, 2);
     m_tft.drawString("C", barX + 16, barY + barH - 12, 2);
 
@@ -280,15 +304,15 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
     int rightX = 244;
     int rightY = 32;
 
-    m_tft.fillRoundRect(rightX, rightY, cardW, cardH, 4, COLOR_CARD_BG);
-    m_tft.drawRoundRect(rightX, rightY, cardW, cardH, 4, COLOR_CARD_BORDER);
+    m_tft.fillRoundRect(rightX, rightY, cardW, cardH, 4, theme.cardBg);
+    m_tft.drawRoundRect(rightX, rightY, cardW, cardH, 4, theme.cardBorder);
 
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawCentreString("THROTTLE", rightX + (cardW / 2), rightY + 6, 2);
 
     char tpsBuf[16];
     snprintf(tpsBuf, sizeof(tpsBuf), "%d%%", (int)round(metrics.throttlePos));
-    m_tft.setTextColor(COLOR_ACCENT_GRN, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_ACCENT_GRN, theme.cardBg);
     m_tft.drawCentreString(tpsBuf, rightX + (cardW / 2), rightY + 24, 4);
 
     // Dual Vertical Meters: Throttle (Left) & Load (Right)
@@ -300,22 +324,22 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
 
     // TPS Bar
     float tpsPercent = constrain(metrics.throttlePos / 100.0f, 0.0f, 1.0f);
-    m_tft.fillRect(tpsBarX, meterY, meterW, meterH, 0x10A2);
+    m_tft.fillRect(tpsBarX, meterY, meterW, meterH, theme.bg);
     int tpsFillH = (int)(meterH * tpsPercent);
     m_tft.fillRect(tpsBarX, meterY + (meterH - tpsFillH), meterW, tpsFillH, COLOR_ACCENT_GRN);
-    m_tft.drawRect(tpsBarX, meterY, meterW, meterH, COLOR_CARD_BORDER);
+    m_tft.drawRect(tpsBarX, meterY, meterW, meterH, theme.cardBorder);
 
     // Load Bar
     float loadPercent = constrain(metrics.engineLoad / 100.0f, 0.0f, 1.0f);
-    m_tft.fillRect(loadBarX, meterY, meterW, meterH, 0x10A2);
+    m_tft.fillRect(loadBarX, meterY, meterW, meterH, theme.bg);
     int loadFillH = (int)(meterH * loadPercent);
     uint16_t loadCol = (metrics.engineLoad > 85.0f) ? COLOR_ACCENT_RED : COLOR_ACCENT_AMBER;
     m_tft.fillRect(loadBarX, meterY + (meterH - loadFillH), meterW, loadFillH, loadCol);
-    m_tft.drawRect(loadBarX, meterY, meterW, meterH, COLOR_CARD_BORDER);
+    m_tft.drawRect(loadBarX, meterY, meterW, meterH, theme.cardBorder);
 
     char loadBuf[16];
     snprintf(loadBuf, sizeof(loadBuf), "LOD:%d%%", (int)round(metrics.engineLoad));
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawCentreString(loadBuf, rightX + (cardW / 2), rightY + 148, 1);
 }
 
@@ -325,6 +349,7 @@ void DisplayManager::renderSportCluster(const OBDMetrics& metrics) {
 
 void DisplayManager::renderTelemetryGrid(const OBDMetrics& metrics) {
     AppSettings& cfg = Hardware.getSettings();
+    const ThemePalette& theme = getTheme();
 
     int cardW = 98;
     int cardH = 82;
@@ -336,26 +361,26 @@ void DisplayManager::renderTelemetryGrid(const OBDMetrics& metrics) {
     float coolDisp = metrics.getCoolantTemp(cfg.useImperial);
     char buf[24];
     snprintf(buf, sizeof(buf), "%d %s", (int)round(coolDisp), metrics.getTempUnit(cfg.useImperial));
-    uint16_t coolCol = (metrics.coolantTempC >= DEFAULT_COOLANT_WARN_C) ? COLOR_ACCENT_RED : COLOR_ACCENT_CYAN;
-    m_tft.setTextColor(coolCol, COLOR_CARD_BG);
+    uint16_t coolCol = (metrics.coolantTempC >= DEFAULT_COOLANT_WARN_C) ? COLOR_ACCENT_RED : theme.accent;
+    m_tft.setTextColor(coolCol, theme.cardBg);
     m_tft.drawCentreString(buf, 8 + (cardW / 2), startY + 26, 4);
-    drawProgressBar(8 + 8, startY + 60, cardW - 16, 6, constrain((metrics.coolantTempC - 40.0f) / 80.0f, 0.0f, 1.0f), coolCol, 0x10A2);
+    drawProgressBar(8 + 8, startY + 60, cardW - 16, 6, constrain((metrics.coolantTempC - 40.0f) / 80.0f, 0.0f, 1.0f), coolCol, theme.bg);
 
     // Card 2: Intake Air Temp
     drawCard(111, startY, cardW, cardH, "INTAKE TEMP");
     float iatDisp = metrics.getIntakeTemp(cfg.useImperial);
     snprintf(buf, sizeof(buf), "%d %s", (int)round(iatDisp), metrics.getTempUnit(cfg.useImperial));
-    m_tft.setTextColor(COLOR_TEXT_BRIGHT, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_TEXT_BRIGHT, theme.cardBg);
     m_tft.drawCentreString(buf, 111 + (cardW / 2), startY + 26, 4);
-    drawProgressBar(111 + 8, startY + 60, cardW - 16, 6, constrain(metrics.intakeAirTempC / 70.0f, 0.0f, 1.0f), COLOR_ACCENT_BLUE, 0x10A2);
+    drawProgressBar(111 + 8, startY + 60, cardW - 16, 6, constrain(metrics.intakeAirTempC / 70.0f, 0.0f, 1.0f), theme.secondary, theme.bg);
 
     // Card 3: Battery Voltage
     drawCard(214, startY, cardW, cardH, "BATTERY VOLTS");
     snprintf(buf, sizeof(buf), "%.1f V", metrics.batteryVoltage);
     uint16_t voltCol = (metrics.batteryVoltage < DEFAULT_VOLT_LOW_WARN) ? COLOR_ACCENT_RED : COLOR_ACCENT_GRN;
-    m_tft.setTextColor(voltCol, COLOR_CARD_BG);
+    m_tft.setTextColor(voltCol, theme.cardBg);
     m_tft.drawCentreString(buf, 214 + (cardW / 2), startY + 26, 4);
-    drawProgressBar(214 + 8, startY + 60, cardW - 16, 6, constrain((metrics.batteryVoltage - 11.0f) / 4.0f, 0.0f, 1.0f), voltCol, 0x10A2);
+    drawProgressBar(214 + 8, startY + 60, cardW - 16, 6, constrain((metrics.batteryVoltage - 11.0f) / 4.0f, 0.0f, 1.0f), voltCol, theme.bg);
 
     // Row 2
     int startY2 = 120;
@@ -363,29 +388,29 @@ void DisplayManager::renderTelemetryGrid(const OBDMetrics& metrics) {
     // Card 4: Engine Load
     drawCard(8, startY2, cardW, cardH, "ENGINE LOAD");
     snprintf(buf, sizeof(buf), "%d %%", (int)round(metrics.engineLoad));
-    m_tft.setTextColor(COLOR_ACCENT_AMBER, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_ACCENT_AMBER, theme.cardBg);
     m_tft.drawCentreString(buf, 8 + (cardW / 2), startY2 + 26, 4);
-    drawProgressBar(8 + 8, startY2 + 60, cardW - 16, 6, metrics.engineLoad / 100.0f, COLOR_ACCENT_AMBER, 0x10A2);
+    drawProgressBar(8 + 8, startY2 + 60, cardW - 16, 6, metrics.engineLoad / 100.0f, COLOR_ACCENT_AMBER, theme.bg);
 
     // Card 5: Throttle Position
     drawCard(111, startY2, cardW, cardH, "THROTTLE POS");
     snprintf(buf, sizeof(buf), "%d %%", (int)round(metrics.throttlePos));
-    m_tft.setTextColor(COLOR_ACCENT_GRN, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_ACCENT_GRN, theme.cardBg);
     m_tft.drawCentreString(buf, 111 + (cardW / 2), startY2 + 26, 4);
-    drawProgressBar(111 + 8, startY2 + 60, cardW - 16, 6, metrics.throttlePos / 100.0f, COLOR_ACCENT_GRN, 0x10A2);
+    drawProgressBar(111 + 8, startY2 + 60, cardW - 16, 6, metrics.throttlePos / 100.0f, COLOR_ACCENT_GRN, theme.bg);
 
     // Card 6: Boost / MAP
     drawCard(214, startY2, cardW, cardH, "MANIFOLD / BOOST");
     float boostPsi = metrics.getBoostPsi();
     if (boostPsi > 0.5f) {
         snprintf(buf, sizeof(buf), "+%.1f PSI", boostPsi);
-        m_tft.setTextColor(COLOR_ACCENT_RED, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_ACCENT_RED, theme.cardBg);
     } else {
         snprintf(buf, sizeof(buf), "%d kPa", (int)round(metrics.mapKpa));
-        m_tft.setTextColor(COLOR_ACCENT_CYAN, COLOR_CARD_BG);
+        m_tft.setTextColor(theme.accent, theme.cardBg);
     }
     m_tft.drawCentreString(buf, 214 + (cardW / 2), startY2 + 26, 4);
-    drawProgressBar(214 + 8, startY2 + 60, cardW - 16, 6, constrain(metrics.mapKpa / 200.0f, 0.0f, 1.0f), COLOR_ACCENT_CYAN, 0x10A2);
+    drawProgressBar(214 + 8, startY2 + 60, cardW - 16, 6, constrain(metrics.mapKpa / 200.0f, 0.0f, 1.0f), theme.accent, theme.bg);
 }
 
 // ============================================================================
@@ -394,6 +419,7 @@ void DisplayManager::renderTelemetryGrid(const OBDMetrics& metrics) {
 
 void DisplayManager::renderPerformance(const OBDMetrics& metrics, const PerformanceTracker& perf) {
     AppSettings& cfg = Hardware.getSettings();
+    const ThemePalette& theme = getTheme();
 
     // 1. Status Banner
     const char* statusText = "STANDSTILL - READY FOR LAUNCH";
@@ -410,7 +436,7 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
             break;
         case PERF_STATE_FINISHED:
             statusText = "RUN COMPLETE - RESULTS READY";
-            statusColor = COLOR_ACCENT_CYAN;
+            statusColor = theme.accent;
             break;
         default:
             statusText = "STOP CAR TO ARM TIMER";
@@ -418,15 +444,15 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
             break;
     }
 
-    m_tft.fillRect(8, 28, 304, 22, 0x18E3);
-    m_tft.drawRect(8, 28, 304, 22, COLOR_CARD_BORDER);
-    m_tft.setTextColor(statusColor, 0x18E3);
+    m_tft.fillRect(8, 28, 304, 22, theme.cardBg);
+    m_tft.drawRect(8, 28, 304, 22, theme.cardBorder);
+    m_tft.setTextColor(statusColor, theme.cardBg);
     m_tft.drawCentreString(statusText, 160, 32, 2);
 
     // 2. Large Live Elapsed Time
     char timeBuf[24];
     snprintf(timeBuf, sizeof(timeBuf), "%.2f s", perf.getLiveTimeSec());
-    m_tft.setTextColor(COLOR_TEXT_BRIGHT, COLOR_BG);
+    m_tft.setTextColor(COLOR_TEXT_BRIGHT, theme.bg);
     m_tft.drawCentreString(timeBuf, 160, 56, 6);
 
     // 3. Telemetry Splits Grid (3 Columns)
@@ -439,10 +465,10 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
     char s60Buf[16];
     if (perf.getCurrentRun().time0to60 > 0.0f) {
         snprintf(s60Buf, sizeof(s60Buf), "%.2f s", perf.getCurrentRun().time0to60);
-        m_tft.setTextColor(COLOR_ACCENT_CYAN, COLOR_CARD_BG);
+        m_tft.setTextColor(theme.accent, theme.cardBg);
     } else {
         snprintf(s60Buf, sizeof(s60Buf), "--.--");
-        m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     }
     m_tft.drawCentreString(s60Buf, 8 + (splitW / 2), splitY + 24, 4);
 
@@ -451,10 +477,10 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
     char s100Buf[16];
     if (perf.getCurrentRun().time0to100 > 0.0f) {
         snprintf(s100Buf, sizeof(s100Buf), "%.2f s", perf.getCurrentRun().time0to100);
-        m_tft.setTextColor(COLOR_ACCENT_GRN, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_ACCENT_GRN, theme.cardBg);
     } else {
         snprintf(s100Buf, sizeof(s100Buf), "--.--");
-        m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     }
     m_tft.drawCentreString(s100Buf, 112 + (splitW / 2), splitY + 24, 4);
 
@@ -466,7 +492,7 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
     } else {
         snprintf(bestBuf, sizeof(bestBuf), "%.2f G", perf.getCurrentRun().peakGForce);
     }
-    m_tft.setTextColor(COLOR_ACCENT_AMBER, COLOR_CARD_BG);
+    m_tft.setTextColor(COLOR_ACCENT_AMBER, theme.cardBg);
     m_tft.drawCentreString(bestBuf, 216 + (splitW / 2), splitY + 24, 2);
 
     // 4. Action Button: ARM / RESET
@@ -478,6 +504,8 @@ void DisplayManager::renderPerformance(const OBDMetrics& metrics, const Performa
 // ============================================================================
 
 void DisplayManager::renderDiagnostics(const OBDMetrics& metrics) {
+    const ThemePalette& theme = getTheme();
+
     // 1. MIL / Check Engine Header Card
     int milY = 28;
     int milH = 34;
@@ -494,16 +522,16 @@ void DisplayManager::renderDiagnostics(const OBDMetrics& metrics) {
     // 2. Fault Codes List Container
     int listY = 68;
     int listH = 96;
-    m_tft.fillRoundRect(8, listY, 304, listH, 4, COLOR_CARD_BG);
-    m_tft.drawRoundRect(8, listY, 304, listH, 4, COLOR_CARD_BORDER);
+    m_tft.fillRoundRect(8, listY, 304, listH, 4, theme.cardBg);
+    m_tft.drawRoundRect(8, listY, 304, listH, 4, theme.cardBorder);
 
     if (metrics.dtcCodes.empty()) {
-        m_tft.setTextColor(COLOR_ACCENT_GRN, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_ACCENT_GRN, theme.cardBg);
         m_tft.drawCentreString("NO STORED TROUBLE CODES DETECTED", 160, listY + 36, 2);
-        m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
         m_tft.drawCentreString("ECU diagnostic status: OK", 160, listY + 56, 1);
     } else {
-        m_tft.setTextColor(COLOR_ACCENT_AMBER, COLOR_CARD_BG);
+        m_tft.setTextColor(COLOR_ACCENT_AMBER, theme.cardBg);
         char hdrBuf[32];
         snprintf(hdrBuf, sizeof(hdrBuf), "FOUND %d FAULT CODE(S):", (int)metrics.dtcCodes.size());
         m_tft.drawString(hdrBuf, 16, listY + 6, 2);
@@ -514,10 +542,10 @@ void DisplayManager::renderDiagnostics(const OBDMetrics& metrics) {
             String code = metrics.dtcCodes[i];
             String desc = Obd.getDtcDescription(code);
 
-            m_tft.setTextColor(COLOR_ACCENT_RED, COLOR_CARD_BG);
+            m_tft.setTextColor(COLOR_ACCENT_RED, theme.cardBg);
             m_tft.drawString(code, 16, itemY, 2);
 
-            m_tft.setTextColor(COLOR_TEXT_BRIGHT, COLOR_CARD_BG);
+            m_tft.setTextColor(COLOR_TEXT_BRIGHT, theme.cardBg);
             m_tft.drawString(desc.substring(0, 32), 80, itemY, 1);
             itemY += 20;
         }
@@ -534,53 +562,59 @@ void DisplayManager::renderDiagnostics(const OBDMetrics& metrics) {
 
 void DisplayManager::renderSettings(const OBDMetrics& metrics) {
     AppSettings& cfg = Hardware.getSettings();
+    const ThemePalette& theme = getTheme();
 
-    int rowY = 28;
-    int rowH = 32;
+    int rowY = 26;
+    int rowH = 28;
     int pad = 4;
 
     // Row 1: Demo Mode & Units
-    // Demo Mode Button
-    uint16_t demoBg = cfg.demoMode ? 0x8200 : 0x18E3;
+    uint16_t demoBg = cfg.demoMode ? 0x8200 : theme.cardBg;
     const char* demoLabel = cfg.demoMode ? "DEMO: ON (SIM)" : "DEMO: OFF (OBD)";
     drawButton(8, rowY, 148, rowH, demoLabel, demoBg, COLOR_TEXT_BRIGHT);
 
-    // Units Button
     const char* unitLabel = cfg.useImperial ? "UNITS: MPH / °F" : "UNITS: KM/H / °C";
-    drawButton(164, rowY, 148, rowH, unitLabel, 0x18E3, COLOR_TEXT_BRIGHT);
+    drawButton(164, rowY, 148, rowH, unitLabel, theme.cardBg, COLOR_TEXT_BRIGHT);
 
     // Row 2: Shift RPM setting with - / + buttons
     int row2Y = rowY + rowH + pad;
-    m_tft.fillRoundRect(8, row2Y, 304, rowH, 4, COLOR_CARD_BG);
-    m_tft.drawRoundRect(8, row2Y, 304, rowH, 4, COLOR_CARD_BORDER);
+    m_tft.fillRoundRect(8, row2Y, 304, rowH, 4, theme.cardBg);
+    m_tft.drawRoundRect(8, row2Y, 304, rowH, 4, theme.cardBorder);
 
-    drawButton(12, row2Y + 3, 40, rowH - 6, " - ", 0x2965, COLOR_TEXT_BRIGHT);
+    drawButton(12, row2Y + 2, 40, rowH - 4, " - ", 0x2965, COLOR_TEXT_BRIGHT);
     char rpmBuf[32];
     snprintf(rpmBuf, sizeof(rpmBuf), "SHIFT RPM: %d", cfg.shiftRpm);
-    m_tft.setTextColor(COLOR_ACCENT_CYAN, COLOR_CARD_BG);
-    m_tft.drawCentreString(rpmBuf, 160, row2Y + 8, 2);
-    drawButton(268, row2Y + 3, 40, rowH - 6, " + ", 0x2965, COLOR_TEXT_BRIGHT);
+    m_tft.setTextColor(theme.accent, theme.cardBg);
+    m_tft.drawCentreString(rpmBuf, 160, row2Y + 6, 2);
+    drawButton(268, row2Y + 2, 40, rowH - 4, " + ", 0x2965, COLOR_TEXT_BRIGHT);
 
     // Row 3: Brightness Mode & Sound Toggle
     int row3Y = row2Y + rowH + pad;
     const char* brLabel = cfg.autoBrightness ? "BRIGHTNESS: AUTO" : "BRIGHTNESS: MANUAL";
-    drawButton(8, row3Y, 148, rowH, brLabel, 0x18E3, COLOR_TEXT_BRIGHT);
+    drawButton(8, row3Y, 148, rowH, brLabel, theme.cardBg, COLOR_TEXT_BRIGHT);
 
     const char* sndLabel = cfg.soundEnabled ? "SOUND: ON" : "SOUND: MUTE";
-    drawButton(164, row3Y, 148, rowH, sndLabel, cfg.soundEnabled ? 0x18E3 : 0x4208, COLOR_TEXT_BRIGHT);
+    drawButton(164, row3Y, 148, rowH, sndLabel, cfg.soundEnabled ? theme.cardBg : 0x4208, COLOR_TEXT_BRIGHT);
 
-    // Row 4: Target OBD Bluetooth Name & Reconnect
+    // Row 4: Theme Selector & OBD Bluetooth Target Name
     int row4Y = row3Y + rowH + pad;
+    char themeBuf[32];
+    snprintf(themeBuf, sizeof(themeBuf), "THEME: %s", theme.name);
+    drawButton(8, row4Y, 148, rowH, themeBuf, theme.cardBg, theme.accent);
+
     char btBuf[32];
     snprintf(btBuf, sizeof(btBuf), "OBD BT: %s", cfg.obdTargetName);
-    drawButton(8, row4Y, 148, rowH, btBuf, 0x18E3, COLOR_ACCENT_AMBER);
+    drawButton(164, row4Y, 148, rowH, btBuf, theme.cardBg, COLOR_ACCENT_AMBER);
 
-    drawButton(164, row4Y, 148, rowH, "RECONNECT OBD", 0x1A4F, COLOR_TEXT_BRIGHT);
-
-    // Row 5: Touch Calibration & Reset
+    // Row 5: Reconnect OBD & Auto-Cycle Pages
     int row5Y = row4Y + rowH + pad;
-    drawButton(8, row5Y, 148, 24, "AUTO-CYCLE PAGES", cfg.autoCyclePages ? 0x0320 : 0x18E3, COLOR_TEXT_BRIGHT);
-    drawButton(164, row5Y, 148, 24, "RESET DEFAULTS", 0x4000, COLOR_TEXT_BRIGHT);
+    drawButton(8, row5Y, 148, rowH, "RECONNECT OBD", 0x1A4F, COLOR_TEXT_BRIGHT);
+    const char* cycleLabel = cfg.autoCyclePages ? "CYCLE: ON (5s)" : "CYCLE: OFF";
+    drawButton(164, row5Y, 148, rowH, cycleLabel, cfg.autoCyclePages ? 0x0320 : theme.cardBg, COLOR_TEXT_BRIGHT);
+
+    // Row 6: Reset Factory Defaults (Centered)
+    int row6Y = row5Y + rowH + pad;
+    drawButton(60, row6Y, 200, 22, "RESET FACTORY DEFAULTS", 0x4000, COLOR_TEXT_BRIGHT);
 }
 
 // ============================================================================
@@ -588,19 +622,20 @@ void DisplayManager::renderSettings(const OBDMetrics& metrics) {
 // ============================================================================
 
 void DisplayManager::renderConfirmModal() {
+    const ThemePalette& theme = getTheme();
     int mw = 260;
     int mh = 130;
     int mx = (SCREEN_WIDTH - mw) / 2;
     int my = (SCREEN_HEIGHT - mh) / 2;
 
     // Dark overlay & modal box
-    m_tft.fillRoundRect(mx, my, mw, mh, 8, 0x18C3);
+    m_tft.fillRoundRect(mx, my, mw, mh, 8, theme.cardBg);
     m_tft.drawRoundRect(mx, my, mw, mh, 8, COLOR_ACCENT_RED);
 
-    m_tft.setTextColor(COLOR_ACCENT_RED, 0x18C3);
+    m_tft.setTextColor(COLOR_ACCENT_RED, theme.cardBg);
     m_tft.drawCentreString("CLEAR ALL FAULT CODES?", 160, my + 14, 2);
 
-    m_tft.setTextColor(COLOR_TEXT_DIM, 0x18C3);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawCentreString("This will reset ECU DTCs and MIL.", 160, my + 38, 1);
     m_tft.drawCentreString("Turn ignition ON, engine OFF.", 160, my + 52, 1);
 
@@ -724,11 +759,11 @@ void DisplayManager::handleTouchSettings(const TouchEvent& touch) {
     int tx = touch.x;
     int ty = touch.y;
 
-    int rowY = 28;
-    int rowH = 32;
+    int rowY = 26;
+    int rowH = 28;
     int pad = 4;
 
-    // Row 1: Demo Mode (X: 8-156, Y: 28-60) & Units (X: 164-312, Y: 28-60)
+    // Row 1: Demo Mode (X: 8-156, Y: 26-54) & Units (X: 164-312, Y: 26-54)
     if (ty >= rowY && ty <= rowY + rowH) {
         if (tx >= 8 && tx <= 156) {
             cfg.demoMode = !cfg.demoMode;
@@ -770,10 +805,15 @@ void DisplayManager::handleTouchSettings(const TouchEvent& touch) {
         }
     }
 
-    // Row 4: BT Target Name (X: 8-156) & Reconnect (X: 164-312)
+    // Row 4: Theme Selector (X: 8-156) & BT Target Name (X: 164-312)
     int row4Y = row3Y + rowH + pad;
     if (ty >= row4Y && ty <= row4Y + rowH) {
         if (tx >= 8 && tx <= 156) {
+            // Cycle through Color Themes
+            cfg.colorTheme = (cfg.colorTheme + 1) % THEME_COUNT;
+            Hardware.saveSettings();
+            m_pageNeedsFullRedraw = true;
+        } else if (tx >= 164 && tx <= 312) {
             // Cycle through common OBD names ("OBDII", "Viecar", "vGate", "OBDLink")
             if (strcmp(cfg.obdTargetName, "OBDII") == 0) {
                 strncpy(cfg.obdTargetName, "Viecar", sizeof(cfg.obdTargetName));
@@ -786,20 +826,26 @@ void DisplayManager::handleTouchSettings(const TouchEvent& touch) {
             }
             Hardware.saveSettings();
             m_pageNeedsFullRedraw = true;
-        } else if (tx >= 164 && tx <= 312) {
+        }
+    }
+
+    // Row 5: Reconnect (X: 8-156) & Auto-Cycle (X: 164-312)
+    int row5Y = row4Y + rowH + pad;
+    if (ty >= row5Y && ty <= row5Y + rowH) {
+        if (tx >= 8 && tx <= 156) {
             Obd.reconnect(cfg.obdTargetName);
+            m_pageNeedsFullRedraw = true;
+        } else if (tx >= 164 && tx <= 312) {
+            cfg.autoCyclePages = !cfg.autoCyclePages;
+            Hardware.saveSettings();
             m_pageNeedsFullRedraw = true;
         }
     }
 
-    // Row 5: Auto-Cycle (X: 8-156) & Reset (X: 164-312)
-    int row5Y = row4Y + rowH + pad;
-    if (ty >= row5Y && ty <= row5Y + 26) {
-        if (tx >= 8 && tx <= 156) {
-            cfg.autoCyclePages = !cfg.autoCyclePages;
-            Hardware.saveSettings();
-            m_pageNeedsFullRedraw = true;
-        } else if (tx >= 164 && tx <= 312) {
+    // Row 6: Reset Factory Defaults (X: 60-260, Y: 188-210)
+    int row6Y = row5Y + rowH + pad;
+    if (ty >= row6Y && ty <= row6Y + 24) {
+        if (tx >= 60 && tx <= 260) {
             Hardware.resetSettings();
             Obd.toggleDemoMode(Hardware.getSettings().demoMode);
             m_pageNeedsFullRedraw = true;
@@ -828,42 +874,47 @@ void DisplayManager::drawArcBar(int16_t cx, int16_t cy, int16_t r, int16_t thick
 }
 
 void DisplayManager::drawCard(int16_t x, int16_t y, int16_t w, int16_t h, const char* title) {
-    m_tft.fillRoundRect(x, y, w, h, 4, COLOR_CARD_BG);
-    m_tft.drawRoundRect(x, y, w, h, 4, COLOR_CARD_BORDER);
-    m_tft.setTextColor(COLOR_TEXT_DIM, COLOR_CARD_BG);
+    const ThemePalette& theme = getTheme();
+    m_tft.fillRoundRect(x, y, w, h, 4, theme.cardBg);
+    m_tft.drawRoundRect(x, y, w, h, 4, theme.cardBorder);
+    m_tft.setTextColor(COLOR_TEXT_DIM, theme.cardBg);
     m_tft.drawCentreString(title, x + (w / 2), y + 6, 1);
 }
 
 void DisplayManager::drawProgressBar(int16_t x, int16_t y, int16_t w, int16_t h, float percent, uint16_t fgColor, uint16_t bgColor) {
+    const ThemePalette& theme = getTheme();
     percent = constrain(percent, 0.0f, 1.0f);
     m_tft.fillRect(x, y, w, h, bgColor);
     int fillW = (int)(w * percent);
     if (fillW > 0) {
         m_tft.fillRect(x, y, fillW, h, fgColor);
     }
-    m_tft.drawRect(x, y, w, h, COLOR_CARD_BORDER);
+    m_tft.drawRect(x, y, w, h, theme.cardBorder);
 }
 
 void DisplayManager::drawButton(int16_t x, int16_t y, int16_t w, int16_t h, const char* label, uint16_t btnColor, uint16_t txtColor) {
+    const ThemePalette& theme = getTheme();
     m_tft.fillRoundRect(x, y, w, h, 4, btnColor);
-    m_tft.drawRoundRect(x, y, w, h, 4, COLOR_CARD_BORDER);
+    m_tft.drawRoundRect(x, y, w, h, 4, theme.cardBorder);
     m_tft.setTextColor(txtColor, btnColor);
     m_tft.drawCentreString(label, x + (w / 2), y + (h / 2) - 6, 2);
 }
 
 void DisplayManager::drawGearBadge(int16_t x, int16_t y, int gear) {
+    const ThemePalette& theme = getTheme();
     int bw = 30;
     int bh = 24;
-    m_tft.fillRoundRect(x, y, bw, bh, 3, 0x2124);
-    m_tft.drawRoundRect(x, y, bw, bh, 3, COLOR_CARD_BORDER);
+    m_tft.fillRoundRect(x, y, bw, bh, 3, theme.cardBg);
+    m_tft.drawRoundRect(x, y, bw, bh, 3, theme.cardBorder);
 
     char gBuf[4];
     if (gear == 0) {
         snprintf(gBuf, sizeof(gBuf), "N");
-        m_tft.setTextColor(COLOR_ACCENT_AMBER, 0x2124);
+        m_tft.setTextColor(COLOR_ACCENT_AMBER, theme.cardBg);
     } else {
         snprintf(gBuf, sizeof(gBuf), "%d", gear);
-        m_tft.setTextColor(COLOR_ACCENT_GRN, 0x2124);
+        m_tft.setTextColor(COLOR_ACCENT_GRN, theme.cardBg);
     }
     m_tft.drawCentreString(gBuf, x + (bw / 2), y + 4, 2);
 }
+

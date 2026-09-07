@@ -52,6 +52,16 @@
 #define DEFAULT_VOLT_LOW_WARN   11.8f
 #define DEFAULT_VOLT_HIGH_WARN  15.2f
 
+// Theme Color Selection
+enum ColorTheme {
+    THEME_CYBER_CYAN = 0,   // Default: Modern Cyber Cyan & Ice Blue
+    THEME_RACING_RED = 1,   // Sport Type-R Racing Red
+    THEME_NISMO_AMBER = 2,  // Classic BMW / JDM Amber Orange
+    THEME_NEON_GREEN = 3,   // Acid / Toxic Lime Green RS
+    THEME_ELECTRIC_BLUE = 4,// Cobalt / Electric GT Blue
+    THEME_COUNT = 5
+};
+
 // Application State / Settings Structure
 struct AppSettings {
     char obdTargetName[32] = "OBDII";
@@ -62,6 +72,7 @@ struct AppSettings {
     uint8_t manualBrightness = 85;  // 10 - 100%
     uint16_t shiftRpm = 6000;       // Shift light trigger RPM
     uint16_t redlineRpm = 7000;     // Redline threshold
+    uint8_t colorTheme = THEME_CYBER_CYAN; // Active Color Theme
     bool autoCyclePages = false;    // Automatically cycle pages
     uint8_t cycleSeconds = 5;       // Auto cycle time
     uint16_t touchMinX = TOUCH_MIN_X;

@@ -16,7 +16,7 @@ It connects wirelessly via **Bluetooth Classic (SPP)** to any standard **ELM327 
 
 ```
 +-------------------------------------------------------------------+
-|  [●] OBD CONNECTED          9M2PJU CYD                     14.2V  | <- Top Status Bar
+|  [●] OBD CONNECTED          9M2PJU Auto                    14.2V  | <- Top Status Bar
 +-------------------------------------------------------------------+
 |                                                                   |
 |   +----------+          /-----------\          +----------+       |
@@ -68,8 +68,17 @@ High-contrast digital gauge cards displaying 6 simultaneous live parameters:
 * **Mode 03 Trouble Code Reader**: Reads active stored diagnostic trouble codes from the ECU (e.g. `P0300`, `P0171`, `P0420`) with human-readable fault descriptions.
 * **Mode 04 DTC Clear Tool**: Clears trouble codes and resets the MIL with a safety confirmation dialog.
 
-### 5. ⚙️ Settings & Customization
+### 5. 🎨 5 Selectable Dashboard Color Themes
+Customize the gauge and dashboard aesthetics with 5 high-contrast color palettes selectable on the **SETUP** page:
+* **Cyber Cyan** *(Default)*: Modern carbon black with electric cyan and ice blue accents.
+* **Racing Red**: High-intensity Type-R sport theme with carbon charcoal and crimson red accents.
+* **Nismo Amber**: Classic JDM / BMW cluster aesthetic with warm amber and orange illumination.
+* **Neon Green**: Acid lime / RS sport theme with dark forest background and toxic green highlights.
+* **Electric Blue**: GT cobalt blue aesthetic with deep ocean black and brilliant electric blue accents.
+
+### 6. ⚙️ Settings & Customization
 * **Built-in Driving Simulator (Demo Mode)**: Test all animations, gauges, revs, and gear shifts on your desk without an OBD dongle!
+* **Color Theme Switcher**: Instant one-touch theme toggling across all gauge screens.
 * **Unit System**: Switch between **Metric** (km/h, °C) and **Imperial** (mph, °F).
 * **Shift Light RPM Adjuster**: Configure shift alert RPM from 3000 to 8500 RPM.
 * **Backlight Auto-Dimming**: Automatic ambient light tracking using the onboard LDR or manual brightness.
