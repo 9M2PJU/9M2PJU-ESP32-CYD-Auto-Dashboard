@@ -4,7 +4,7 @@
 [![Framework](https://img.shields.io/badge/Framework-Arduino-blue.svg?logo=arduino)](https://www.arduino.cc/)
 [![Target Hardware](https://img.shields.io/badge/Hardware-ESP32--CYD-yellow.svg)](https://github.com/9M2PJU/9M2PJU-ESP32-CYD-Auto-Dashboard)
 [![OBD-II Protocol](https://img.shields.io/badge/OBD--II-ELM327%20BT%20Classic-green.svg)](https://en.wikipedia.org/wiki/OBD-II_PIDs)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
 An advanced automotive digital gauge cluster and live telemetry dashboard firmware for the **ESP32 Cheap Yellow Display (CYD)** family (ESP32-2432S028, ESP32-2432S024, ESP32-2432S032, and ESP32-3248S035).
 
@@ -185,6 +185,9 @@ pio run -e esp32-cyd-28r --target monitor
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **PolyForm Noncommercial License 1.0.0** — see the [LICENSE](LICENSE) file for details.
+
+* **Personal & Hobbyist Use**: Free for personal, amateur, research, and non-commercial vehicle builds.
+* **Commercial Rights**: Commercial distribution, pre-flashed device sales, and monetization are reserved exclusively by **[9M2PJU](https://github.com/9M2PJU)**.
 
 Developed with ❤️ by **[9M2PJU](https://github.com/9M2PJU)**.
